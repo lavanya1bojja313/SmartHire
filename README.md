@@ -1,4 +1,4 @@
-# ScheduleAI — Autonomous Interview Scheduler
+# SmartHire — Autonomous Interview Scheduler
 
 > An AI-powered agent that reads candidate emails, checks recruiter availability, and books interviews automatically — with zero human intervention for routine scheduling.
 
@@ -14,7 +14,7 @@ Recruiting teams waste enormous time on back-and-forth email chains just to find
 
 ## Proposed Solution & Approach
 
-ScheduleAI is a fully autonomous scheduling agent that:
+SmartHire is a fully autonomous scheduling agent that:
 
 1. **Reads inbound candidate emails** via a webhook (SendGrid Inbound Parse or Gmail)
 2. **Understands availability requests** using GPT-4o (natural language understanding)
@@ -178,13 +178,8 @@ docker-compose down
 
 # Full reset (wipes database)
 docker-compose down -v && docker-compose up --build
-```
-
----
 
 ## Project Structure
-
-```
 HACK/
 ├── main.py               # FastAPI app entry point
 ├── models.py             # SQLAlchemy DB models
@@ -199,24 +194,18 @@ HACK/
 ├── dashboard.jsx         # React frontend dashboard
 ├── docker-compose.yml    # Full stack orchestration
 └── .env.example          # Environment variable template
-```
-
----
 
 ## Team Members
 
 | Name | Role |
-|---|---|
-| Tallapaneni Naveen Kumar Chowdary | Full-Stack Developer & AI Integration |
-| *(add team member)* | *(role)* |
-| *(add team member)* | *(role)* |
-
----
+|Lavanya Bojja| Backend Development & API Integration|
+| Tallapaneni Naveen Kumar Chowdary | AI Integration & LLM Processing |
+| Mahitha Bathula | Frontend Development & UI Designing|
+| M.Srinith | Database & Deployment |
 
 ## Common Issues
 
 | Problem | Fix |
-|---|---|
 | Request stays in "Draft" | ✅ Tick the **Auto-send** checkbox when creating the request |
 | Emails not sending | Check `docker-compose logs worker` for errors. Verify `GMAIL_APP_PASSWORD` has no spaces |
 | Dashboard not loading | Confirm Docker is running: `docker-compose ps` |
