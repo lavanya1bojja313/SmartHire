@@ -1,238 +1,224 @@
-# SmartHire
-SmartHire – Autonomous Interview Scheduler
-📌 Problem Statement
-In today’s recruitment process, interview scheduling is mostly handled manually through multiple email exchanges between recruiters and candidates. This traditional approach creates several challenges:
-Delays caused by repeated back-and-forth communication
-Miscommunication between recruiter and candidate
-Time zone confusion
-Scheduling conflicts and double bookings
-Poor candidate experience due to slow responses
-Recruiters spend significant time coordinating interview availability instead of focusing on evaluation and hiring decisions. As hiring scales, manual scheduling becomes inefficient and error-prone. Therefore, an intelligent and automated solution is required to streamline interview scheduling without continuous human involvement.
+# ScheduleAI — Autonomous Interview Scheduler
 
-💡 Proposed Solution
-SmartHire is an AI-powered Autonomous Interview Scheduler that automates the entire interview coordination process from email receipt to calendar booking.
+> An AI-powered agent that reads candidate emails, checks recruiter availability, and books interviews automatically — with zero human intervention for routine scheduling.
 
-🔄 Workflow Overview
-The candidate sends availability via email in natural language.
-The system reads and interprets the message using a Large Language Model (LLM).
-Available dates and time slots are extracted from unstructured text.
-The recruiter’s calendar is checked for free slots.
-A matching available slot is identified.
-The system books the meeting automatically.
-A Google Meet link is generated.
-Confirmation emails are sent to both recruiter and candidate.
-Both calendars are updated instantly.
-After initial setup, the entire process runs automatically with zero manual intervention.
+---
 
-🎯 Objectives
-Automate interview scheduling end-to-end
-Reduce recruiter administrative workload
-Eliminate scheduling conflicts and double bookings
-Improve candidate experience with instant responses
-Integrate AI with real-world enterprise tools
-Build a scalable and production-ready system
+## Problem Statement
 
-🏗️ System Architecture & Approach
-SmartHire follows a modular and scalable architecture composed of the following layers:
-1️⃣ Natural Language Processing Layer
-The system uses LLMs to understand availability written in natural language (e.g., “I’m free next Monday between 2 PM and 5 PM”).
-It extracts structured date-time information from unstructured text while handling multiple formats and phrasing variations.
-2️⃣ Calendar Intelligence Layer
-Using OAuth 2.0 authentication, the system connects securely to Google Calendar.
-It checks real-time availability and ensures no overlapping bookings occur.
-3️⃣ Scheduling Engine
+Recruiting teams waste enormous time on back-and-forth email chains just to find a mutually available interview slot. A single scheduling thread can span 5–10 emails over several days, consume recruiter attention, and delay the hiring pipeline. For high-volume hiring, this is a significant operational bottleneck.
 
-A custom state machine manages the scheduling lifecycle:
+**The core problem:** Interview scheduling is repetitive, rule-based, and time-consuming — but it currently requires a human to do it.
 
-Email received
+---
 
-Availability extracted
+## Proposed Solution & Approach
 
-Slot matched
+ScheduleAI is a fully autonomous scheduling agent that:
 
-Booking confirmed
+1. **Reads inbound candidate emails** via a webhook (SendGrid Inbound Parse or Gmail)
+2. **Understands availability requests** using GPT-4o (natural language understanding)
+3. **Checks the recruiter's real calendar** via Google Calendar API (`freeBusy` query)
+4. **Decides the next action** — propose slots, confirm, or escalate to a human
+5. **Sends a reply email** to the candidate from the recruiter's address
+6. **Books a Google Meet interview** when both parties agree on a time
+7. **Updates the recruiter dashboard** in real-time showing all active requests
 
-Notification sent
+The agent operates as a **finite state machine**:
 
-Internal functions include:
+```
+Draft → Outreach Sent → Negotiating → Scheduled
+                                  ↘ Human Intervention (if stuck)
+```
 
-check_calendar()
+Each state transition is audited and visible to the recruiter. The system escalates to human review after 3 failed negotiation rounds.
 
-book_slot()
+---
 
-4️⃣ Notification & Communication Layer
+## Technology Stack
 
-The system automatically:
+### Backend
+| Component | Technology |
+|---|---|
+| API Framework | **FastAPI** (Python 3.12, async) |
+| Task Queue | **Celery** + Redis broker |
+| Database | **PostgreSQL 16** via SQLAlchemy (async) |
+| Migrations | **Alembic** |
+| AI Orchestrator | **OpenAI GPT-4o** (`openai` Python SDK) |
+| Email Sending | **Gmail SMTP** (SSL port 465) via smtplib |
+| Calendar Integration | **Google Calendar API v3** (OAuth2) |
+| Token Security | JWT (`python-jose`) + Fernet encryption |
 
-Generates Google Meet links
+### Frontend
+| Component | Technology |
+|---|---|
+| Dashboard | **React** (Next.js, JSX) |
+| Styling | Vanilla CSS with glassmorphism design |
+| State management | React hooks (`useState`, `useEffect`) |
 
-Sends confirmation emails
+### Infrastructure
+| Component | Technology |
+|---|---|
+| Containerisation | **Docker** + Docker Compose |
+| Message Broker | **Redis 7** |
+| Reverse Proxy (prod) | Nginx (optional) |
 
-Updates recruiter and candidate calendars
+### Third-Party APIs & Services
+| Service | Purpose |
+|---|---|
+| **OpenAI API** | GPT-4o for email understanding and reply generation |
+| **Google Calendar API** | `freeBusy` queries + event creation with Meet links |
+| **Gmail SMTP** | Sending candidate emails via App Password |
+| **SendGrid Inbound Parse** *(optional)* | Receiving candidate reply emails as webhooks |
 
-Sends status notifications
+---
 
-5️⃣ Background Processing
+## Setup & Run Instructions
 
-Asynchronous processing ensures scalability and responsiveness:
+### Prerequisites
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running
+- An OpenAI API key → [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
+- A Gmail account + App Password (for sending emails)
 
-Task queues handle scheduling jobs
+---
 
-Background workers process booking requests
+### Step 1 — Clone and Configure
 
-Caching improves performance
+```bash
+# Copy the environment template
+copy .env.example .env
+```
 
-🛠️ Technology Stack
-Frontend
-React
-Next.js (TypeScript)
-Tailwind CSS
+Open `.env` and fill in these **minimum required** values:
 
-Backend & APIs
-Python
-FastAPI
-SQLAlchemy
-Alembic
+```env
+SECRET_KEY=your-random-32-char-hex-string
+OPENAI_API_KEY=sk-proj-...
+GMAIL_USER=your.email@gmail.com
+GMAIL_APP_PASSWORD=yourapppassword   # No spaces — 16 chars
+```
 
-Database & Caching
-PostgreSQL
-Redis
+**Generate a SECRET_KEY:**
+```bash
+python -c "import secrets; print(secrets.token_hex(32))"
+```
 
-Background Processing
-Celery
-AI & Language Models
+**Get a Gmail App Password:**
+1. Enable 2-Step Verification at [myaccount.google.com/security](https://myaccount.google.com/security)
+2. Go to [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords)
+3. Create one for "ScheduleAI" — copy the 16-character code (remove spaces)
 
-OpenAI GPT-4o
-Anthropic Claude 3.5 Sonnet
-LiteLLM
-Presidio
+---
 
-Infrastructure & Integrations
-AWS SES
-SendGrid
-OAuth 2.0
-Microsoft Graph API
-Google Calendar API
-Docker
-Docker Compose
-AI Framework Concepts
-ReAct Framework
-Pydantic Agents
+### Step 2 — Start the System
 
-Custom State Machine
-
-🔗 Third-Party Resources Used
-
-SmartHire integrates with the following external services:
-
-Google Calendar API for availability checking and booking
-
-Gmail API / SMTP for email communication
-
-AWS SES / SendGrid for email delivery
-
-OAuth 2.0 for secure authentication
-
-Microsoft Graph API for optional Outlook integration
-
-LLM providers (OpenAI, Anthropic)
-
-⚙️ Setup & Run Instructions
-🔹 Prerequisites
-
-Node.js (v18 or above)
-
-Python (v3.10 or above)
-
-PostgreSQL
-
-Redis
-
-Docker & Docker Compose
-
-Google Cloud Project with Calendar API enabled
-
-OAuth credentials
-
-🔹 1. Clone Repository
-git clone https://github.com/your-repo/smarthire.git
-cd smarthire
-🔹 2. Backend Setup
-
-Create virtual environment:
-
-python -m venv venv
-source venv/bin/activate   # Windows: venv\Scripts\activate
-
-Install dependencies:
-
-pip install -r requirements.txt
-
-Create .env file:
-
-DATABASE_URL=postgresql://user:password@localhost/smarthire
-REDIS_URL=redis://localhost:6379
-OPENAI_API_KEY=your_key
-ANTHROPIC_API_KEY=your_key
-GOOGLE_CLIENT_ID=your_id
-GOOGLE_CLIENT_SECRET=your_secret
-SMTP_EMAIL=your_email
-SMTP_PASSWORD=your_password
-
-Run migrations:
-
-alembic upgrade head
-
-Start backend server:
-
-uvicorn main:app --reload
-🔹 3. Start Celery Worker
-celery -A app.worker worker --loglevel=info
-🔹 4. Frontend Setup
-cd frontend
-npm install
-npm run dev
-
-Application runs at:
-
-http://localhost:3000
-🔹 5. Docker Setup (Optional)
+```bash
 docker-compose up --build
-📊 Expected Outcomes
+```
 
-80–90% reduction in scheduling coordination time
+First run takes ~2 minutes to download images and install packages. All 4 services start automatically:
 
-Instant automated responses to candidates
+| Service | URL |
+|---|---|
+| **Dashboard** | http://localhost:3000 |
+| **API** (FastAPI) | http://localhost:8000 |
+| **API Docs** (Swagger) | http://localhost:8000/docs |
 
-Zero double bookings due to real-time checks
+---
 
-Improved candidate experience
+### Step 3 — Connect Google Calendar *(optional, for real slot booking)*
 
-Recruiters focus on interviews and evaluation
+1. Create a project at [console.cloud.google.com](https://console.cloud.google.com) → Enable **Google Calendar API**
+2. Create OAuth 2.0 credentials (Web Application type), set redirect URI:
+   `http://localhost:8000/auth/google/callback`
+3. Add to `.env`:
+```env
+GOOGLE_CLIENT_ID=xxxxx.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=GOCSPX-xxxxx
+TOKEN_ENCRYPTION_KEY=your-32-char-hex
+```
+4. Restart: `docker-compose restart api worker`
+5. Go to **Dashboard → Settings → Connect Google**
 
-Scalable to support multiple recruiters and departments
+---
 
-🔮 Future Enhancements
+### Step 4 — Test the Full Flow
 
-Multi-recruiter intelligent slot allocation
+1. Open **http://localhost:3000** → Dashboard
+2. Click **New Request** → fill in candidate details
+3. ✅ Tick **"Auto-send outreach email"**
+4. Click **Create** — the agent immediately sends a scheduling email to the candidate
+5. Click **Emails** tab to see the email that was sent
+6. Click any request row to see the full **Audit Trail**
 
-Automatic time zone detection
+**To simulate a candidate reply:**
+```bash
+docker-compose exec api python -c "
+from tasks import process_candidate_reply
+process_candidate_reply.delay(
+    'PASTE-REQUEST-UUID',
+    'Hi, I am available Thursday at 3 PM. Does that work?'
+)
+print('Queued!')
+"
+```
 
-WhatsApp and Slack integration
+**Watch the agent work in real time:**
+```bash
+docker-compose logs -f worker
+```
 
-SMS interview reminders
+---
 
-Analytics dashboard for HR insights
+### Stop / Reset
 
-Support for panel interviews
+```bash
+# Stop all containers
+docker-compose down
 
-👥 Team Members & Roles
+# Full reset (wipes database)
+docker-compose down -v && docker-compose up --build
+```
 
-Team Name: Coding Crew
-Institute: Institute of Aeronautical Engineering
+---
 
-Name	Role
-Bojja Lavanya	Backend Development & API Integration
-Bathula Mahitha	 Frontend Development & UI Design API Integration
-T. Naveen Kumar	AI Integration & LLM Processing
-M. Sai Srinith	Database & Deployment
+## Project Structure
+
+```
+HACK/
+├── main.py               # FastAPI app entry point
+├── models.py             # SQLAlchemy DB models
+├── orchestrator.py       # AI agent core logic
+├── state_machine.py      # Request state transitions
+├── tasks.py              # Celery background tasks
+├── scheduling_email.py   # Email sending service (Gmail/SendGrid)
+├── calendar_service.py   # Google Calendar API integration
+├── auth.py               # JWT auth + Google OAuth2 routes
+├── scheduling_requests.py# REST API for scheduling requests
+├── config.py             # Environment configuration
+├── dashboard.jsx         # React frontend dashboard
+├── docker-compose.yml    # Full stack orchestration
+└── .env.example          # Environment variable template
+```
+
+---
+
+## Team Members
+
+| Name | Role |
+|---|---|
+| Tallapaneni Naveen Kumar Chowdary | Full-Stack Developer & AI Integration |
+| *(add team member)* | *(role)* |
+| *(add team member)* | *(role)* |
+
+---
+
+## Common Issues
+
+| Problem | Fix |
+|---|---|
+| Request stays in "Draft" | ✅ Tick the **Auto-send** checkbox when creating the request |
+| Emails not sending | Check `docker-compose logs worker` for errors. Verify `GMAIL_APP_PASSWORD` has no spaces |
+| Dashboard not loading | Confirm Docker is running: `docker-compose ps` |
+| `connection refused` on port 5432 | Database not ready — wait 30s and retry |
+| Google Calendar not connecting | Ensure redirect URI matches exactly: `http://localhost:8000/auth/google/callback` |

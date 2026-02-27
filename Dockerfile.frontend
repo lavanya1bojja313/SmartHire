@@ -1,0 +1,19 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY package.json ./
+RUN npm install
+
+# Copy only files that actually exist in D:\HACK
+COPY dashboard.jsx ./src/components/Dashboard.jsx
+
+# Create all needed config files inline — no extra files needed in D:\HACK
+RUN echo '/** @type {import("next").NextConfig} */ module.exports = {};' > next.config.js && \
+    mkdir -p app && \
+    echo 'import Dashboard from "../src/components/Dashboard"; export default function Home() { return <Dashboard />; }' > app/page.jsx && \
+    echo 'export default function RootLayout({ children }) { return (<html lang="en"><body style={{margin:0,padding:0}}>{children}</body></html>); }' > app/layout.jsx
+
+EXPOSE 3000
+
+CMD ["npm", "run", "dev"]

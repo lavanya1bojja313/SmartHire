@@ -1,0 +1,66 @@
+
+[1m============================================================[0m
+[1m  Phase 1 — Standalone Test Suite[0m
+[1m============================================================[0m
+
+[1mState Machine — Valid Transitions[0m
+  [92m✓[0m DRAFT → OUTREACH_SENT
+  [92m✓[0m DRAFT → FAILED
+  [92m✓[0m OUTREACH_SENT → NEGOTIATING
+  [92m✓[0m OUTREACH_SENT → SCHEDULED (candidate accepts first proposal)
+  [92m✓[0m NEGOTIATING → NEGOTIATING (self-loop)
+  [92m✓[0m NEGOTIATING → HUMAN_INTERVENTION
+  [92m✓[0m HUMAN_INTERVENTION → SCHEDULED (human books manually)
+
+[1mState Machine — Invalid Transitions[0m
+  [92m✓[0m SCHEDULED is terminal (no further transitions allowed)
+  [92m✓[0m FAILED is terminal
+  [92m✓[0m DRAFT cannot skip directly to SCHEDULED
+  [92m✓[0m DRAFT cannot go directly to NEGOTIATING
+
+[1mState Machine — Audit Log[0m
+  [92m✓[0m Transitions are appended to audit log with timestamp
+  [92m✓[0m All transitions appear in audit log
+
+[1mState Machine — Conversation History[0m
+  [92m✓[0m Agent email recorded in conversation history
+  [92m✓[0m Each candidate reply increments negotiation_loop_count
+  [92m✓[0m Duplicate proposed slots are deduplicated
+
+[1mState Machine — Escalation Triggers[0m
+  [92m✓[0m No escalation when under loop limit
+  [92m✓[0m Escalate when negotiation_loop_count >= max_loops
+  [92m✓[0m Escalate on 2 consecutive booking failures
+  [92m✓[0m Escalation records reason and transitions to HUMAN_INTERVENTION
+
+[1mState Machine — Booking[0m
+  [92m✓[0m Booking success → SCHEDULED with event IDs
+  [92m✓[0m Booking failures increment consecutive counter
+
+[1mState Machine — Terminal States[0m
+  [92m✓[0m is_terminal=True for Scheduled
+  [92m✓[0m is_terminal=True for Failed
+  [92m✓[0m is_terminal=True for Human_Intervention
+  [92m✓[0m is_terminal=False for Draft
+  [92m✓[0m is_terminal=False for Outreach_Sent
+  [92m✓[0m is_terminal=False for Negotiating
+
+[1mState Machine — Serialisation Round-Trip[0m
+  [92m✓[0m StateContext → dict → StateContext preserves all fields
+
+[1mCalendar Tools — Mock[0m
+  [92m✓[0m check_calendar returns slots only during business hours (9-17 UTC)
+  [92m✓[0m check_calendar caps results at 10 slots
+  [92m✓[0m check_calendar returns 0 slots for past date range
+  [92m✓[0m book_slot succeeds on a free slot
+  [92m✓[0m book_slot rejects duplicate booking of same slot
+
+[1mAgent Decision Parsing[0m
+  [92m✓[0m Valid send_email JSON parses correctly
+  [92m✓[0m Valid escalate JSON parses correctly
+  [92m✓[0m Invalid LLM JSON raises JSONDecodeError (orchestrator catches and escalates)
+
+[1m============================================================[0m
+[92m[1m  All 37 tests passed ✓[0m
+[1m============================================================[0m
+

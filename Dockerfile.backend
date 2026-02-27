@@ -1,0 +1,28 @@
+FROM python:3.12-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy all Python files
+COPY *.py .
+COPY alembic.ini .
+COPY ./alembic ./alembic
+# CRITICAL: Remove files whose names conflict with Python stdlib/library names.
+# Keeping these causes Python to import YOUR file instead of the real library,
+# breaking uvicorn, celery, and everything that depends on them.
+RUN rm -f \
+    /app/email.py \
+    /app/calendar.py \
+    /app/string.py \
+    /app/json.py \
+    /app/logging.py \
+    /app/types.py \
+    /app/env.py
+
+EXPOSE 8000

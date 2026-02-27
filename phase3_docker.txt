@@ -1,0 +1,67 @@
+
+───────────────────────────────────────────────────────
+  1. JWT — Token creation and validation
+───────────────────────────────────────────────────────
+  ✓  Create token with correct claims
+  ✓  Expired token is rejected
+  ✓  Tampered signature is rejected
+  ✓  Wrong secret is rejected
+  ✓  Admin token has correct role claim
+
+───────────────────────────────────────────────────────
+  2. RBAC — Org-scoped authorization
+───────────────────────────────────────────────────────
+  ✓  Recruiter can access own org's resources
+  ✓  Recruiter cannot access another org's resources
+  ✓  Admin bypasses org check
+  ✓  Admin can access all orgs
+
+───────────────────────────────────────────────────────
+  3. State Machine — Transitions
+───────────────────────────────────────────────────────
+  ✓  Draft → outreach_sent is valid
+  ✓  Draft → negotiating is invalid (must go via outreach_sent)
+  ✓  Negotiating → scheduled is valid
+  ✓  Scheduled is terminal — no transitions out
+  ✓  Failed is terminal
+  ✓  Cancelled is terminal
+  ✓  Human intervention can return to negotiating
+  ✓  Human intervention can be cancelled
+  ✓  Full happy path: draft → outreach_sent → negotiating → scheduled
+  ✓  Escalation path: negotiating → human_intervention → negotiating → scheduled
+
+───────────────────────────────────────────────────────
+  4. Request Validation — Input sanitization
+───────────────────────────────────────────────────────
+  ✓  Valid create request passes
+  ✓  Email is lowercased on validation
+  ✓  Missing candidate_name raises validation error
+  ✓  Invalid email raises validation error
+  ✓  Empty position_title raises validation error
+  ✓  Name longer than 255 chars is rejected
+  ✓  auto_send defaults to False
+
+───────────────────────────────────────────────────────
+  5. Action Guards — Terminal state protection
+───────────────────────────────────────────────────────
+  ✓  Cancelling a scheduled request raises error
+  ✓  Cancelling an already-cancelled request raises error
+  ✓  Cancelling negotiating request is allowed
+  ✓  Manual override on scheduled request raises error
+  ✓  Manual override on draft is allowed
+  ✓  Cannot escalate a scheduled request
+  ✓  Cannot double-escalate
+  ✓  Escalating from outreach_sent is allowed
+
+───────────────────────────────────────────────────────
+  6. Audit Log — Immutability contract
+───────────────────────────────────────────────────────
+  ✓  Audit entries are appended in order
+  ✓  Each audit entry gets a unique ID
+  ✓  Audit log returns a copy — mutations do not affect stored data
+  ✓  Audit entries have created_at timestamps
+
+═══════════════════════════════════════════════════════
+  Results: 38 passed, 0 failed
+═══════════════════════════════════════════════════════
+
